@@ -79,14 +79,25 @@ def handlePost(filename, path):
         with open(output_path + filename, 'w') as nf:
             nf.write("---" + os.linesep)
             for key in y:
-                if key == 'date':
-                    nf.write(key + ": \"" + time.strftime("%Y-%m-%d")  + "\"" + os.linesep)
-                elif not  isinstance(y[key], types.StringTypes):
-                    nf.write(key + ":" + str(y[key])  + os.linesep)
-                elif key in ["tags","categories"]:
-                    nf.write(key + ":" + str(y[key].split(" ")) + os.linesep)
-                else:
-                    nf.write(key + ": \"" + str(y[key])  + "\"" + os.linesep)
+                if not y[key] == None:
+                    if key == 'date':
+                        nf.write(key + ": \"" + time.strftime("%Y-%m-%d")  + "\"" + os.linesep)
+                    elif not  isinstance(y[key], types.StringTypes):
+                        nf.write(key + ":" + os.linesep)
+                        for d in y[key]:
+                            nf.write("- " + d + os.linesep)
+                    elif key in ["tags","categories"]:
+                        nf.write(key + ":" + str(y[key].split(" ")) + os.linesep)
+                    elif key == "status":
+                        if y[key] == "draft":
+                            nf.write("draft" + ": true"+ os.linesep)
+                    elif  key == "summary":
+                        nf.write("description" + ": \"" + str(y[key])  + "\"" + os.linesep)
+                    else:
+                        nf.write(key + ": \"" + str(y[key])  + "\"" + os.linesep)
+            if not "date" in y:
+                nf.write("date" + ": \"" + time.strftime("%Y-%m-%d")  + "\"" + os.linesep)
+
             nf.write("---" + os.linesep)
 
             # Uggly fix for syntax higlighting
