@@ -23,7 +23,6 @@ __maintainer__ = "Fredrik Loch"
 __email__ = "mail@fredrikloch.me"
 __status__ = "Development"
 
-
 import argparse
 import subprocess
 import re
@@ -38,7 +37,6 @@ import types
 
 def parseCLI():
     command_line = argparse.ArgumentParser(description='Options')
-
     command_line.add_argument("-o", "--output", type=str,
         help="Path to output folder, will be created if it does not exist. Defaults to content",
         default="content")
@@ -90,7 +88,10 @@ def handlePost(filename, path):
                 else:
                     nf.write(key + ": \"" + str(y[key])  + "\"" + os.linesep)
             nf.write("---" + os.linesep)
-            nf.write(r.groups()[1])
+
+            # Uggly fix for syntax higlighting
+            text = r.groups()[1].replace("{% highlight", "{{< highlight").replace("%}", ">}}").replace("{% endhighlight", "{{< /highlight")
+            nf.write(text)
 
 
 if __name__ == '__main__':
@@ -110,8 +111,6 @@ if __name__ == '__main__':
         if not arguments.output[-1] == '/': arguments.output = arguments.output + "/"
         for filename in os.listdir(arguments.source):
             handlePost(filename, arguments.source)
-
-
     else:
         printLog(3, "Source folder not found, make sure that the folder " + arguments.source + " exists")
         sys.exit(-1)
