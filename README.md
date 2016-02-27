@@ -9,7 +9,7 @@ however it's only been tested on debian using python 2.7
 ## Limitations
 
 It currently does not handle static resources such as images and scripts, these will have to be moved to
-there correct locations manually.
+their correct locations manually.
 As for jekyll specific codes it only handles {% Highlighting %} converting it into the hugo format
 
 # Usage
