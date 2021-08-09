@@ -60,15 +60,17 @@ def printLog(level,message):
         logger.error(message)
 
 def handlePost(filename, path):
-    printLog(1,"Trying to convert " + filename)
+    printLog(1, "Trying to convert " + filename)
 
     try:
         time = datetime.strptime(filename[:10], "%Y-%m-%d")
     except:
         printLog(3, "Error parsing " + filename + " could not get date")
         return
+
     with open(path + filename) as f:
-        printLog(1,"Parsing front matter")
+        printLog(1, "Parsing front matter")
+
         regex = re.compile("---\n([\s\S]*)---\n([\s\S]*)")
         content = f.read()
 
@@ -82,11 +84,12 @@ def handlePost(filename, path):
             output_path = arguments.output + y["layout"] + "/"
         else:
             output_path = arguments.output
+
         with open(output_path + filename, 'w') as nf:
             nf.write("---" + os.linesep)
 
             for key in y:
-                if not y[key] == None:
+                if not y[key] is None:
                     if key == 'date':
                         nf.write(key + ": \"" + time.strftime("%Y-%m-%d")  + "\"" + os.linesep)
                     elif key in ["tags","categories"]:
@@ -104,7 +107,7 @@ def handlePost(filename, path):
 
             nf.write("---" + os.linesep)
 
-            # Ugly fix for syntax highlighting
+            # Ugly fix for syntax highlighting.
             text = r.groups()[1].replace(
                 "{% highlight", 
                 "{{< highlight").replace("%}", ">}}").replace("{% endhighlight",
@@ -116,14 +119,14 @@ def handlePost(filename, path):
 if __name__ == '__main__':
     logger = logging.getLogger("standard logger")
     logger.setLevel(logging.INFO)
-    FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
-    logging.basicConfig(format=FORMAT)
+    format = '%(asctime)s - %(levelname)s - %(message)s'
+    logging.basicConfig(format=format)
 
     arguments = parseCLI()
     verbose = arguments.verbose
 
     if os.path.exists(arguments.source):
-        printLog(1,"Creating folder " + arguments.output + " for output")
+        printLog(1, "Creating folder " + arguments.output + " for output")
 
         if not os.path.exists(arguments.output):
             os.makedirs(arguments.output)
@@ -133,6 +136,7 @@ if __name__ == '__main__':
             arguments.source = arguments.source + "/"
         if not arguments.output[-1] == '/':
             arguments.output = arguments.output + "/"
+
         for filename in os.listdir(arguments.source):
             handlePost(filename, arguments.source)
     else:
