@@ -35,6 +35,7 @@ from datetime import datetime
 import yaml
 import types
 
+
 def parseCLI():
     command_line = argparse.ArgumentParser(description='Options')
     command_line.add_argument("-o", "--output", type=str,
@@ -44,8 +45,9 @@ def parseCLI():
         help="Print extra logging output",
         default=False)
     command_line.add_argument("source", type=str,  help="Path to folder containing jekyll posts")
+
     args = command_line.parse_args()
-    return args;
+    return args
 
 def printLog(level,message):
     if verbose:
@@ -53,33 +55,41 @@ def printLog(level,message):
             logger.info(message)
         elif level == 2:
             logger.warning(message)
+
     if level == 3:
         logger.error(message)
 
 def handlePost(filename, path):
-    printLog(1,"Trying to convert " + filename)
+    printLog(1, "Trying to convert " + filename)
+
     try:
         time = datetime.strptime(filename[:10], "%Y-%m-%d")
     except:
         printLog(3, "Error parsing " + filename + " could not get date")
         return
+
     with open(path + filename) as f:
-        printLog(1,"Parsing front matter")
+        printLog(1, "Parsing front matter")
+
         regex = re.compile("---\n([\s\S]*)---\n([\s\S]*)")
         content = f.read()
+
         r = regex.search(content)
         r.groups()
         y = yaml.load(r.groups()[0])
+
         if y["layout"]:
             printLog(1, "Creating folder for " + y["layout"] + " layout")
             if not os.path.exists(arguments.output + y["layout"]): os.makedirs(arguments.output + y["layout"])
             output_path = arguments.output + y["layout"] + "/"
         else:
             output_path = arguments.output
+
         with open(output_path + filename, 'w') as nf:
             nf.write("---" + os.linesep)
+
             for key in y:
-                if not y[key] == None:
+                if not y[key] is None:
                     if key == 'date':
                         nf.write(key + ": \"" + time.strftime("%Y-%m-%d")  + "\"" + os.linesep)
                     elif key in ["tags","categories"]:
@@ -91,31 +101,42 @@ def handlePost(filename, path):
                         nf.write("description" + ": \"" + str(y[key])  + "\"" + os.linesep)
                     else:
                         nf.write(yaml.dump({key: y[key]}, default_flow_style=False))
+            
             if not "date" in y:
                 nf.write("date" + ": \"" + time.strftime("%Y-%m-%d")  + "\"" + os.linesep)
 
             nf.write("---" + os.linesep)
 
-            # Uggly fix for syntax higlighting
-            text = r.groups()[1].replace("{% highlight", "{{< highlight").replace("%}", ">}}").replace("{% endhighlight", "{{< /highlight")
+            # Ugly fix for syntax highlighting.
+            text = r.groups()[1].replace(
+                "{% highlight", 
+                "{{< highlight").replace("%}", ">}}").replace("{% endhighlight",
+                "{{< /highlight"
+            )
             nf.write(text)
 
 
 if __name__ == '__main__':
     logger = logging.getLogger("standard logger")
     logger.setLevel(logging.INFO)
-    FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
-    logging.basicConfig(format=FORMAT)
+    format = '%(asctime)s - %(levelname)s - %(message)s'
+    logging.basicConfig(format=format)
 
     arguments = parseCLI()
     verbose = arguments.verbose
-    if os.path.exists(arguments.source):
-        printLog(1,"Creating folder " + arguments.output + " for output")
 
-        if not os.path.exists(arguments.output): os.makedirs(arguments.output)
-        ## Clean up input
-        if not arguments.source[-1] == '/': arguments.source = arguments.source + "/"
-        if not arguments.output[-1] == '/': arguments.output = arguments.output + "/"
+    if os.path.exists(arguments.source):
+        printLog(1, "Creating folder " + arguments.output + " for output")
+
+        if not os.path.exists(arguments.output):
+            os.makedirs(arguments.output)
+        
+        # Clean up input
+        if not arguments.source[-1] == '/':
+            arguments.source = arguments.source + "/"
+        if not arguments.output[-1] == '/':
+            arguments.output = arguments.output + "/"
+
         for filename in os.listdir(arguments.source):
             handlePost(filename, arguments.source)
     else:
