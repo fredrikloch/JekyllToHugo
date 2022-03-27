@@ -24,17 +24,11 @@ __email__ = "mail@fredrikloch.me"
 __status__ = "Development"
 
 import argparse
-import subprocess
 import re
-import string, random
-import shutil
 import os
 import sys
 import logging
-from datetime import datetime
 import yaml
-import types
-
 
 def parseCLI():
     command_line = argparse.ArgumentParser(description='Options')
@@ -59,61 +53,82 @@ def printLog(level,message):
     if level == 3:
         logger.error(message)
 
-def handlePost(filename, path):
-    printLog(1, "Trying to convert " + filename)
+def handlePost(source_file):
+    filename = os.path.basename(source_file)
+    printLog(1, "Trying to convert: " + filename)
 
-    try:
-        time = datetime.strptime(filename[:10], "%Y-%m-%d")
-    except:
-        printLog(3, "Error parsing " + filename + " could not get date")
-        return
+    date_in_filename_match = re.search(r"^\d{4}\-\d{1,2}\-\d{1,2}", filename)
+    if not date_in_filename_match:
+        printLog(2, "Unable to parse date from filename")
 
-    with open(path + filename) as f:
+
+    with open(source_file) as f:
         printLog(1, "Parsing front matter")
 
-        regex = re.compile("---\n([\s\S]*)---\n([\s\S]*)")
+        # Fixed Regex when content contains --- other than the frontmatter sepator
+        frontmatter_regex = re.compile("---\n([\s\S]*?)---\n([\s\S]*)")
+        date_regex = re.compile("^\s+(\d+\-\d+\d+)")
+
         content = f.read()
 
-        r = regex.search(content)
-        r.groups()
-        y = yaml.load(r.groups()[0])
+        frontmatter_regex_search_result = frontmatter_regex.search(content)
+        # Expected to have a frontmatter for further processing
+        if not frontmatter_regex_search_result:
+            printLog(3, "Unable to read Frontmatter")
+            f.close()
+            return
 
-        if y["layout"]:
-            printLog(1, "Creating folder for " + y["layout"] + " layout")
-            if not os.path.exists(arguments.output + y["layout"]): os.makedirs(arguments.output + y["layout"])
-            output_path = arguments.output + y["layout"] + "/"
-        else:
-            output_path = arguments.output
+        frontmatter_yaml = yaml.safe_load(frontmatter_regex_search_result.group(1))
 
-        with open(output_path + filename, 'w') as nf:
+        output_path = arguments.output
+        if frontmatter_yaml["layout"]:
+            output_path = os.path.join(arguments.output, frontmatter_yaml["layout"])
+            if not os.path.exists(output_path): 
+                printLog(1, "Creating folder for " + frontmatter_yaml["layout"] + " layout")
+                os.makedirs(output_path)
+
+        output_filename = os.path.join(output_path, filename)
+        with open(output_filename, 'w') as nf:
             nf.write("---" + os.linesep)
 
-            for key in y:
-                if not y[key] is None:
+            for key in frontmatter_yaml:
+                if not frontmatter_yaml[key] is None:
                     if key == 'date':
-                        nf.write(key + ": \"" + time.strftime("%Y-%m-%d")  + "\"" + os.linesep)
+                        # Hugo expects to have only YYYY-MM-DD but Jekyll can have time as well 
+                        date_regex_search_result = re.search(date_regex, str(frontmatter_yaml[key]))
+                        if date_regex_search_result:
+                            printLog(1, "Date found in Frontmatter: {}".format(date_regex_search_result.group(1)))
+                            nf.write('{}: "{}"{}'.format(key,date_regex_search_result.group(1) + "\"", os.linesep))
                     elif key in ["tags","categories"]:
-                        nf.write(key + ":" + str(y[key].split(" ")) + os.linesep)
+                        value = frontmatter_yaml[key]
+                        # Hugo expects a Go list for tags and categories
+                        nf.write('{}: "{}"{}'.format(key, str(value.split(" ") if isinstance(value, str) else (value if isinstance(value, list) else [])), os.linesep))
                     elif key == "status":
-                        if y[key] == "draft":
-                            nf.write("draft" + ": true"+ os.linesep)
+                        if frontmatter_yaml[key] == "draft":
+                            nf.write('draft: true{}'.format(os.linesep))
                     elif  key == "summary":
-                        nf.write("description" + ": \"" + str(y[key])  + "\"" + os.linesep)
+                        nf.write('description: "{}"{}'.format(str(frontmatter_yaml[key]), os.linesep))
+                    elif  key == "permalink":
+                        nf.write('url: "{}"{}'.format(str(frontmatter_yaml[key]), os.linesep))
+                    elif  key == "layout":
+                        nf.write('type: "{}"{}'.format(str(frontmatter_yaml[key]), os.linesep))
                     else:
-                        nf.write(yaml.dump({key: y[key]}, default_flow_style=False))
+                        nf.write(yaml.dump({key: frontmatter_yaml[key]}, default_flow_style=False))
             
-            if not "date" in y:
-                nf.write("date" + ": \"" + time.strftime("%Y-%m-%d")  + "\"" + os.linesep)
+            if not "date" in frontmatter_yaml and date_in_filename_match:
+                printLog(1, "Unable to find date from Frontmatter, using date from filename")
+                nf.write('date: "{}"{}'.format(date_in_filename_match.group(0), os.linesep))
 
             nf.write("---" + os.linesep)
 
             # Ugly fix for syntax highlighting.
-            text = r.groups()[1].replace(
+            text = frontmatter_regex_search_result.group(2).replace(
                 "{% highlight", 
                 "{{< highlight").replace("%}", ">}}").replace("{% endhighlight",
                 "{{< /highlight"
             )
             nf.write(text)
+            printLog(1, "Converted file: {}".format(output_filename))
 
 
 if __name__ == '__main__':
@@ -123,23 +138,21 @@ if __name__ == '__main__':
     logging.basicConfig(format=format)
 
     arguments = parseCLI()
+    arguments.source = os.path.abspath(arguments.source)
+    arguments.output = os.path.abspath(arguments.output)
     verbose = arguments.verbose
 
     if os.path.exists(arguments.source):
-        printLog(1, "Creating folder " + arguments.output + " for output")
+        printLog(1, "Creating folder: {} for output".format(arguments.output))
 
         if not os.path.exists(arguments.output):
             os.makedirs(arguments.output)
-        
-        # Clean up input
-        if not arguments.source[-1] == '/':
-            arguments.source = arguments.source + "/"
-        if not arguments.output[-1] == '/':
-            arguments.output = arguments.output + "/"
 
-        for filename in os.listdir(arguments.source):
-            handlePost(filename, arguments.source)
+        for r, d, f in os.walk(arguments.source):
+                for f1 in f:
+                    if re.match(r".*\.md$", f1):
+                        handlePost(os.path.join(r, f1))
     else:
-        printLog(3, "Source folder not found, make sure that the folder " + arguments.source + " exists")
+        printLog(3, "Source folder not found, make sure that the folder {} exists.".format(arguments.source))
         sys.exit(-1)
 
