@@ -14,10 +14,25 @@ As for jekyll specific codes it only handles {% Highlighting %} converting it in
 
 # Usage
 
-jekyllToHugo.py [-h] [-o OUTPUT] [-v] source
+```
+$ jekyllToHugo.py [-h] [-o OUTPUT] [-v] source
+```
 
-Options
+**PS:** If you are unable to execute the `jekyllToHugo.py` directly, then use this:
 
+```
+$ python jekyllToHugo.py [-h] [-o OUTPUT] [-v] source
+```
+
+If you have both Python 2 and Python 3 installed in your Linux system, you can use this:
+
+```
+$ python2 jekyllToHugo.py [-h] [-o OUTPUT] [-v] source
+```
+
+## Options
+
+```
 positional arguments:
   source                Path to folder containing jekyll posts
 
@@ -27,3 +42,4 @@ optional arguments:
                         Path to output folder, will be created if it does not
                         exist. Defaults to content
   -v, --verbose         Print extra logging output
+```
