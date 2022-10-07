@@ -1,18 +1,19 @@
 # Jekyll To Hugo
 
-This is a small script for converting [jekyll](jekyllrb.com) posts to [hugo](gohugo.io)
+This is a small script for converting [jekyll](https://jekyllrb.com) posts to [hugo](https://gohugo.io)
 
-It requires python and should work on all unix like systems, possibly also on windows machines
-however it's only been tested on debian using python 2.7
+It requires Python and should work on all Unix-like systems, possibly also on Windows machines.
+However, it's only been tested on debian using Python 2.7.
 
 
 ## Limitations
 
 It currently does not handle static resources such as images and scripts, these will have to be moved to
 their correct locations manually.
-As for jekyll specific codes it only handles {% Highlighting %} converting it into the hugo format
 
-# Usage
+As for Jekyll-specific code, it only handles `{% highlight %}`, converting it into the Hugo format
+
+## Usage
 
 ```
 $ jekyllToHugo.py [-h] [-o OUTPUT] [-v] source
