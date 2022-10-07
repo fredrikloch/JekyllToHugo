@@ -16,7 +16,7 @@ As for Jekyll-specific code, it only handles `{% highlight %}`, converting it in
 ## Usage
 
 ```
-jekyllToHugo.py [-h] [-o OUTPUT] [-v] source
+$ jekyllToHugo.py [-h] [-o OUTPUT] [-v] source
 ```
 
 **PS:** If you are unable to execute the `jekyllToHugo.py` directly, then use this:
